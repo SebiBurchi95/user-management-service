@@ -1,0 +1,1 @@
+This is a service that exposes a REST API that performs CRUD operations on a users table in an SQLite database using the ent library.
