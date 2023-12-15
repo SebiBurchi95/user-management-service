@@ -5,13 +5,14 @@ import (
 	"log"
 	"user-management-servie/ent"
 
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/viper"
 )
 
 func SetupDatabase() *ent.Client {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath("../")
+	viper.AddConfigPath("../user-management-service")
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatalf("Error reading config file, %s", err)
