@@ -1,7 +1,5 @@
-Introduction
 This service provides a REST API for managing a users table in an SQLite database. It utilizes the ent library and is developed in Go 1.21.
 
-Prerequisites
 Before proceeding, ensure that you have Go version 1.21 installed on your system.
 
 For running the app as a standalone service, run: make all (the server will start on port 8080)
