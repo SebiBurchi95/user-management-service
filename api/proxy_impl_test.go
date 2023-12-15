@@ -15,6 +15,7 @@ import (
 
 	"github.com/alecthomas/assert"
 	"github.com/gorilla/mux"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func setupTest(t *testing.T) (*ent.Client, Proxy) {
@@ -29,7 +30,7 @@ func TestCreateUser(t *testing.T) {
 
 	user := requestUser{
 		Username: "test",
-		Email:    "test@gmail.com",
+		Email:    "testCreate@gmail.com",
 	}
 	requestBody, _ := json.Marshal(user)
 	req := httptest.NewRequest(http.MethodPost, "/users", bytes.NewBuffer(requestBody))
@@ -44,7 +45,7 @@ func TestCreateUser(t *testing.T) {
 	err := json.NewDecoder(respRecorder.Body).Decode(&createdUser)
 	assert.NoError(t, err)
 	assert.Equal(t, "test", createdUser.Username)
-	assert.Equal(t, "test@gmail.com", createdUser.Email)
+	assert.Equal(t, "testCreate@gmail.com", createdUser.Email)
 }
 
 func TestGetUser(t *testing.T) {
@@ -54,7 +55,7 @@ func TestGetUser(t *testing.T) {
 	mockUser, err := client.User.
 		Create().
 		SetUsername("test").
-		SetEmail("test@gmail.com").
+		SetEmail("testCreate@gmail.com").
 		Save(context.Background())
 	if err != nil {
 		t.Fatalf("Failed to create mock user: %v", err)
@@ -87,7 +88,7 @@ func TestUpdateUser(t *testing.T) {
 	mockUser, err := client.User.
 		Create().
 		SetUsername("test").
-		SetEmail("test@gmail.com").
+		SetEmail("testUpdate@gmail.com").
 		Save(context.Background())
 	if err != nil {
 		t.Fatalf("Failed to create mock user: %v", err)
@@ -151,4 +152,35 @@ func TestListUsers(t *testing.T) {
 	err := json.NewDecoder(respRecorder.Body).Decode(&users)
 	assert.NoError(t, err)
 	assert.Len(t, users, 2)
+}
+
+func TestDeleteUser(t *testing.T) {
+	client, proxy := setupTest(t)
+	defer client.Close()
+
+	mockUser, err := client.User.
+		Create().
+		SetUsername("testUser").
+		SetEmail("testUser@gmail.com").
+		Save(context.Background())
+	if err != nil {
+		t.Fatalf("Failed to create mock user: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/users/%d", mockUser.ID), nil)
+	respRecorder := httptest.NewRecorder()
+
+	r := mux.NewRouter()
+	r.HandleFunc("/users/{id}", proxy.DeleteUser)
+	r.ServeHTTP(respRecorder, req)
+
+	assert.Equal(t, http.StatusOK, respRecorder.Code)
+
+	var result map[string]string
+	err = json.NewDecoder(respRecorder.Body).Decode(&result)
+	assert.NoError(t, err)
+	assert.Equal(t, "success", result["result"])
+
+	_, err = client.User.Get(context.Background(), mockUser.ID)
+	assert.True(t, ent.IsNotFound(err), "User should be deleted")
 }

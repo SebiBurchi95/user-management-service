@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 	"user-management-servie/ent"
-	"user-management-servie/util"
 
 	"github.com/gorilla/mux"
 )
@@ -20,6 +19,11 @@ type proxyImpl struct {
 type requestUser struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
+}
+
+type dogPhoto struct {
+	FileSizeBytes int    `json:"fileSizeBytes"`
+	Url           string `json:"url"`
 }
 
 type userResponse struct {
@@ -92,16 +96,22 @@ func (p *proxyImpl) GetUser(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	dogPhotoURL, err := util.GetRandomDogPhotoURL()
+	dogPhotoURL, err := getRandomDogPhotoURL()
 	if err != nil {
 		log.Printf("Failed to fetch dog photo: %v", err)
+		return
+	}
+
+	dogPhotoURLStr := ""
+	if dogPhotoURL != nil {
+		dogPhotoURLStr = dogPhotoURL.Url
 	}
 
 	userResp := userResponse{
 		ID:          u.ID,
 		Username:    u.Username,
 		Email:       u.Email,
-		DogPhotoURL: dogPhotoURL,
+		DogPhotoURL: dogPhotoURLStr,
 		CreatedAt:   u.CreatedAt,
 		UpdatedAt:   u.UpdatedAt,
 	}
@@ -173,4 +183,18 @@ func (p *proxyImpl) UpdateUser(resp http.ResponseWriter, req *http.Request) {
 
 func NewProxy(client *ent.Client) Proxy {
 	return &proxyImpl{client: client}
+}
+
+func getRandomDogPhotoURL() (*dogPhoto, error) {
+	resp, err := http.Get("https://random.dog/woof.json")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result dogPhoto
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
