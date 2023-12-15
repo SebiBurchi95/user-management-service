@@ -1,0 +1,5 @@
+# Ignore SQLite database file
+database/ent.db
+
+# Ignore the 'out' directory
+out/
